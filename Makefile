@@ -1,10 +1,11 @@
 BINDIR := $(HOME)/bin
+CONFDIR := $(HOME)/.config/chezmoi-all
 INFRA_DIR := $(BEWMAIN)/MainVault/Reference/Cyberinfrastructure
 
-.PHONY: all install-scripts chezmoi-cache
+.PHONY: all install-scripts chezmoi-cache install-config
 # .PHONY: cron
 
-all: install-scripts chezmoi-cache
+all: install-scripts chezmoi-cache install-config
 
 install-scripts: $(BINDIR)/brew-nightly-update.sh $(BINDIR)/brew-monthly-inventory.sh \
                  $(BINDIR)/chezmoi-all $(BINDIR)/chezmoi-all-dryrun \
@@ -29,6 +30,15 @@ chezmoi-cache: config/chezmoi-hosts.json
 
 config/chezmoi-hosts.json: $(INFRA_DIR)/README.md
 	rebuild-chezmoi-cache
+
+# Install a local copy of the host cache so launchd-triggered runs of
+# chezmoi-all don't need to read from the CloudStorage/Dropbox path
+# (which requires Full Disk Access for launchd-spawned processes).
+install-config: $(CONFDIR)/chezmoi-hosts.json
+
+$(CONFDIR)/chezmoi-hosts.json: config/chezmoi-hosts.json
+	mkdir -p $(CONFDIR)
+	install -m 0644 config/chezmoi-hosts.json $(CONFDIR)/chezmoi-hosts.json
 
 # cron: cron.conf
 # 	python3 install-cron.py

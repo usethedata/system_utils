@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# chezmoi-all-dryrun — launchd wrapper for `chezmoi-all apply --dry-run --verbose`.
+# chezmoi-all-dryrun — launchd wrapper for `chezmoi-all update --dry-run --verbose`.
+#
+# `chezmoi update` pulls the chezmoi source repo from origin and then applies.
+# With --dry-run, chezmoi still performs the git pull, but skips the apply,
+# so the log reports what the just-pulled source *would* change on each host.
 #
 # Computes a single timestamped log file and exports it as LOG_FILE so that
 # chezmoi-all writes to that file, and redirects this script's own stdout/stderr
@@ -17,4 +21,4 @@ export LOG_FILE="${LOG_DIR}/chezmoi-all-dryrun-$(date +%Y%m%d-%H%M%S).log"
 exec >>"$LOG_FILE" 2>&1
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] chezmoi-all-dryrun wrapper starting"
-exec /Users/bruce/bin/chezmoi-all apply --dry-run --verbose
+exec /Users/bruce/bin/chezmoi-all update --dry-run --verbose

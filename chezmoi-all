@@ -23,17 +23,24 @@ if [[ -z "${BEWMAIN:-}" ]]; then
     exit 1
 fi
 
-CACHE="${BEWMAIN}/Progs/Ongoing/Maintenance/utilities/config/chezmoi-hosts.json"
+# Prefer a local copy of the host cache so launchd-triggered runs don't need
+# Full Disk Access to read from ~/Library/CloudStorage/Dropbox/...
+LOCAL_CACHE="${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi-all/chezmoi-hosts.json"
+CANONICAL_CACHE="${BEWMAIN}/Progs/Ongoing/Maintenance/utilities/config/chezmoi-hosts.json"
+if [[ -f "$LOCAL_CACHE" ]]; then
+    CACHE="$LOCAL_CACHE"
+elif [[ -f "$CANONICAL_CACHE" ]]; then
+    CACHE="$CANONICAL_CACHE"
+else
+    echo "Error: Host cache not found at $LOCAL_CACHE or $CANONICAL_CACHE" >&2
+    echo "Run: make -C '${BEWMAIN}/Progs/Ongoing/Maintenance/utilities' all" >&2
+    exit 1
+fi
+
 LOG_DIR="${BEWMAIN}/Data/logs"
 LOG_FILE="${LOG_FILE:-${LOG_DIR}/chezmoi-all-$(date +%Y%m%d-%H%M%S).log}"
 LOCAL_HOST="$(hostname -s)"
 SSH_TIMEOUT=10
-
-if [[ ! -f "$CACHE" ]]; then
-    echo "Error: Host cache not found at $CACHE" >&2
-    echo "Run: make -C '${BEWMAIN}/Progs/Ongoing/Maintenance/utilities' chezmoi-cache" >&2
-    exit 1
-fi
 
 # Default to "apply" if no arguments given
 if [[ $# -eq 0 ]]; then
@@ -41,6 +48,15 @@ if [[ $# -eq 0 ]]; then
 fi
 
 mkdir -p "$LOG_DIR"
+
+# When run interactively, duplicate output to the log file so the user
+# sees it on the terminal AND it lands in the log. When run non-interactively
+# (e.g. the chezmoi-all-dryrun launchd wrapper already does
+# `exec >>"$LOG_FILE" 2>&1`), leave stdout/stderr alone — otherwise every
+# line gets written to the log twice.
+if [[ -t 1 ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 # Parse host list from JSON (simple grep/sed — no jq dependency needed)
 aliases=()
@@ -54,20 +70,24 @@ failed=0
 skipped=0
 
 log() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
-    echo "$msg" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
 log "chezmoi-all: running 'chezmoi $*' on $total hosts"
 log "Log file: $LOG_FILE"
 echo ""
 
+if (( total == 0 )); then
+    log "ERROR: no hosts parsed from $CACHE — aborting"
+    exit 1
+fi
+
 for alias in "${aliases[@]}"; do
     log "--- $alias ---"
 
     if [[ "$alias" == "$LOCAL_HOST" ]]; then
         # Run locally
-        if chezmoi "$@" 2>&1 | tee -a "$LOG_FILE"; then
+        if chezmoi "$@" 2>&1; then
             log "$alias: OK (local)"
             succeeded=$((succeeded + 1))
         else
@@ -91,7 +111,7 @@ for alias in "${aliases[@]}"; do
             remote_cmd+=" $(printf '%q' "$arg")"
         done
 
-        if ssh -o ConnectTimeout="$SSH_TIMEOUT" "$alias" "$remote_cmd" 2>&1 | tee -a "$LOG_FILE"; then
+        if ssh -o ConnectTimeout="$SSH_TIMEOUT" "$alias" "$remote_cmd" 2>&1; then
             log "$alias: OK (remote)"
             succeeded=$((succeeded + 1))
         else
