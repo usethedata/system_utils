@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly status report for Bruce's managed *nix systems
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/system-status-check
+
+# Let a slow SSH probe or chezmoi pull finish rather than killing it mid-run.
+TimeoutStartSec=15min

@@ -1,0 +1,31 @@
+# Example hosts.yaml for system-status-check.
+#
+# The real config lives at ~/.config/system-status-check/hosts.yaml on
+# grizzledbear and is not committed to this public repo. Copy this file there
+# and replace the placeholder aliases with real SSH aliases from
+# ~/.ssh/config.
+
+hosts:
+  - alias: host1
+    os: macos
+    checks: [reachability, chezmoi, brew]
+
+  - alias: host2
+    os: macos
+    checks: [reachability, chezmoi, brew]
+    unreachable_is_expected: true    # laptop — silences the reachability error
+
+  - alias: host3
+    os: ubuntu
+    checks: [reachability, chezmoi, apt]
+    local: true                      # runs without SSH (orchestrator host)
+
+  - alias: host4
+    os: synology
+    checks: [reachability, chezmoi, synology_packages, synology_os]
+
+settings:
+  ssh_connect_timeout_seconds: 10
+  per_check_timeout_seconds: 120
+  report_dir: "~/Dropbox/BEWMain/MainVault/Data/system-status"
+  log_dir: "~/Dropbox/BEWMain/Data/logs"

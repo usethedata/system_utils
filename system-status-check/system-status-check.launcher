@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# system-status-check launcher template.
+# install.sh copies this to ~/.local/bin/system-status-check after rewriting
+# VENV_DIR and PKG_SRC_DIR to the installed locations.
+
+set -euo pipefail
+
+# --- installer fills these in ---
+VENV_DIR="__VENV_DIR__"
+PKG_SRC_DIR="__PKG_SRC_DIR__"
+# -------------------------------
+
+if [[ ! -x "${VENV_DIR}/bin/python" ]]; then
+    echo "system-status-check: venv missing at ${VENV_DIR}" >&2
+    echo "Run install.sh from the system-status-check source directory to recreate it." >&2
+    exit 1
+fi
+
+export PYTHONPATH="${PKG_SRC_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
+exec "${VENV_DIR}/bin/python" -m system_status_check.main "$@"

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run system-status-check nightly at 04:00 local
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=system-status-check.service
+
+[Install]
+WantedBy=timers.target
