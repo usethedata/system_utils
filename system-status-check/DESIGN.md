@@ -271,7 +271,22 @@ Validate either drop-in with `visudo -c -f /etc/sudoers.d/system-status-check` (
 - **Mac App Store available updates** — `mas outdated` (requires the `mas` CLI installed and signed in on each Mac).
 - **Upstream updates for locally running MCPs** — file-based version checks against the relevant `Progs/ai/` clones; consolidates an existing manual procedure into this report.
 - **Write-back into a task system** — auto-file a task when a high-severity entry appears.
-- **`flagged_packages` extension** — currently a brew-only convention; extend per-OS (e.g., Linux kernel updates that need a reboot, DSM updates that need a maintenance window).
+- **Disruptive-update tracking, with (conditional) package-pinning support.** A two-tier roadmap, gated on whether the lower tier is sufficient.
+
+  **Tier 1 — flagged_packages as informational annotation (likely to do).** Build out the existing `flagged_packages` mechanism so the report visibly tags updates that have historically required manual follow-up (e.g., `node` and `python@*` on macOS may trigger TCC re-grants on cloud-storage paths after upgrade; a Linux kernel bump implies a reboot; a DSM package update may need a maintenance window). Concrete work:
+    - Surface the flagged count in the Summary line, not only in the per-package details. (Currently the details show a `⚑` suffix on flagged items, but the Summary doesn't reflect them at all.)
+    - Document the semantic clearly: "flagged" means *informational* — needs extra care when the operator chooses to upgrade. The tool does not block or skip the upgrade; it just calls it out.
+    - Extend the config beyond brew. `hosts.yaml`'s `flagged_packages` map is already structured per-OS-key; wire the apt, synology_packages, and (potentially) synology_os checks to read their own flagged lists. Glob patterns like `python@*` work via `fnmatch`.
+
+  **Tier 2 — native pin/hold integration (might do).** If Tier 1 turns out to be insufficient and the operator wants the system to recognize "I've actively decided not to upgrade this," integrate with the package managers' own pin/hold mechanisms (`brew pin <formula>`, `sudo apt-mark hold <package>`). Required work:
+    - Capture pinned/held state. Homebrew already returns `pinned` in its JSON output (the brew check already passes this through). apt would need a separate `apt-mark showhold` call.
+    - Decide how pinned/held items render. Three options to evaluate at that point:
+      - *Status quo*: contribute to the "updates pending" count, annotated in details with `(pinned)`.
+      - *Filter entirely*: treat as not-actionable, similar to how Ubuntu phased updates are handled today.
+      - *Split count*: render the Summary as e.g. `Brew: 12 updates pending, 1 pinned`.
+    - Casks have no first-class pin in Homebrew — would need a separate exclusion convention if cask-pinning matters.
+
+  Tier 2 is explicitly conditional. If Tier 1 plus the operator's mental model suffices, this tier doesn't get built.
 
 ## Known limitations
 
