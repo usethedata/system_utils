@@ -20,8 +20,8 @@ def test_parse_empty_json_shape():
     assert flagged == 0
 
 
-def test_parse_real_superbear_fixture():
-    body = (FIXTURES / "brew-superbear.json").read_text()
+def test_parse_real_with_updates_fixture():
+    body = (FIXTURES / "brew-with-updates.json").read_text()
     items, flagged = _parse(body, [])
     assert len(items) == 15
     assert flagged == 0

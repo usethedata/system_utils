@@ -46,8 +46,8 @@ def test_parse_upgradable_clean():
     assert _parse_upgradable_block(_simulate_combined(0, 0, body)) == []
 
 
-def test_parse_upgradable_real_fixture_grizzledbear():
-    body = (FIXTURES / "apt-grizzledbear.txt").read_text()
+def test_parse_upgradable_real_fixture_with_updates():
+    body = (FIXTURES / "apt-with-updates.txt").read_text()
     items = _parse_upgradable_block(_simulate_combined(0, 0, body))
     assert len(items) >= 1
     # Spot-check one known entry
@@ -59,8 +59,8 @@ def test_parse_upgradable_real_fixture_grizzledbear():
     assert "noble" in by_name["jq"]["origin"]
 
 
-def test_parse_upgradable_real_fixture_frostybear():
-    body = (FIXTURES / "apt-frostybear.txt").read_text()
+def test_parse_upgradable_real_fixture_no_updates():
+    body = (FIXTURES / "apt-no-updates.txt").read_text()
     assert _parse_upgradable_block(_simulate_combined(0, 0, body)) == []
 
 
